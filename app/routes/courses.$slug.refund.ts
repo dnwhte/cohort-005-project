@@ -89,7 +89,7 @@ function lastDayOfWindow(purchasedAtIso: string): string {
  * The confirmation the learner gets in their inbox. There is no mail
  * transport wired up yet, so the built message goes to the server log.
  */
-function buildReversalEmail(input: {
+function buildRefundRequestEmail(input: {
   learnerName: string;
   learnerEmail: string;
   courseTitle: string;
@@ -97,14 +97,14 @@ function buildReversalEmail(input: {
 }) {
   return {
     to: input.learnerEmail,
-    subject: `Reversal requested — ${input.courseTitle}`,
+    subject: `Refund requested — ${input.courseTitle}`,
     body: [
       `Hi ${input.learnerName},`,
       "",
-      `We have your Reversal request for "${input.courseTitle}".`,
-      `The Reversal is for ${formatPrice(input.amount)}, the amount you paid.`,
+      `We have your refund request for "${input.courseTitle}".`,
+      `If it is approved, we will refund ${formatPrice(input.amount)}.`,
       "",
-      "Our team reviews every Reversal by hand. You do not need to do anything else — we will email you again when it is done.",
+      "Our team reviews every refund request by hand. You do not need to do anything else — we will email you again when it is done.",
       "",
       "— The Cadence team",
     ].join("\n"),
@@ -142,7 +142,7 @@ export async function action({ params, request }: Route.ActionArgs) {
   }
 
   if (getOpenRefund(purchase.id)) {
-    throw data("You already have a request open on this purchase.", {
+    throw data("You already have a pending refund request on this purchase.", {
       status: 409,
     });
   }
@@ -222,7 +222,7 @@ export async function action({ params, request }: Route.ActionArgs) {
     .returning()
     .get();
 
-  const email = buildReversalEmail({
+  const email = buildRefundRequestEmail({
     learnerName: learner.name,
     learnerEmail: learner.email,
     courseTitle: course.title,
