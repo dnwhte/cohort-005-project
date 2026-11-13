@@ -1,12 +1,15 @@
-import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, notExists, sql } from "drizzle-orm";
 import { db } from "~/db";
 import {
   coupons,
+  courses,
+  enrollments,
   lessonProgress,
   lessons,
   modules,
   purchases,
   refunds,
+  users,
   videoWatchEvents,
   LessonProgressStatus,
   RefundStatus,
@@ -143,9 +146,10 @@ function getCompletedLessonCount(userId: number, lessonIds: number[]): number {
 }
 
 /**
- * Whether the learner can start a Refund Request on their latest purchase of
- * this course. The course page and the refund action both use this, so the
- * offer is shown exactly when the request would be accepted.
+ * Whether the Learner can start a Refund Request on the purchase that gave
+ * them their Enrollment: their latest purchase of this course that is not a
+ * Team Purchase (ADR 0003). The course page and the refund action both use
+ * this, so the offer is shown exactly when the request would be accepted.
  */
 export function getRefundEligibility(
   userId: number,
@@ -154,7 +158,18 @@ export function getRefundEligibility(
   const purchase = db
     .select()
     .from(purchases)
-    .where(and(eq(purchases.userId, userId), eq(purchases.courseId, course.id)))
+    .where(
+      and(
+        eq(purchases.userId, userId),
+        eq(purchases.courseId, course.id),
+        notExists(
+          db
+            .select({ id: coupons.id })
+            .from(coupons)
+            .where(eq(coupons.purchaseId, purchases.id))
+        )
+      )
+    )
     .orderBy(sql`${purchases.createdAt} desc`)
     .get();
 
@@ -166,7 +181,11 @@ export function getRefundEligibility(
   }
 
   const latestRequest = db
-    .select({ status: refunds.status })
+    .select({
+      status: refunds.status,
+      amount: refunds.amount,
+      requestedAt: refunds.requestedAt,
+    })
     .from(refunds)
     .where(eq(refunds.purchaseId, purchase.id))
     .orderBy(sql`${refunds.id} desc`)
@@ -193,7 +212,11 @@ export function getRefundEligibility(
     secondsWatched: getSecondsWatched(userId, lessonIds),
   });
 
-  if (reason) return { eligible: false as const, reason };
+  if (reason) {
+    const pendingRequest =
+      latestRequest?.status === RefundStatus.Requested ? latestRequest : null;
+    return { eligible: false as const, reason, pendingRequest };
+  }
 
   return {
     eligible: true as const,
@@ -201,4 +224,110 @@ export function getRefundEligibility(
     amount: getRefundableAmount(purchase, course.price),
     lastDayInWindow: lastDayOfRefundWindow(purchasedAt),
   };
+}
+
+// ─── Platform Admin decisions (ADR 0001, 0002) ───
+
+/** Has the Learner passed a refund limit? Shown as a warning, never a block. */
+export function getLimitWarnings(f: {
+  lessonCount: number;
+  completedLessonCount: number;
+  secondsWatched: number;
+}): string[] {
+  const warnings: string[] = [];
+  if (
+    f.lessonCount > 0 &&
+    f.completedLessonCount / f.lessonCount >= REFUND_COMPLETION_LIMIT
+  ) {
+    warnings.push("Completed half the course or more");
+  }
+  if (f.secondsWatched >= REFUND_WATCH_LIMIT_SECONDS) {
+    warnings.push("Watched two hours or more");
+  }
+  return warnings;
+}
+
+/** Every Pending Refund Request, oldest first, with the Buyer's progress now. */
+export function getPendingRefundRequests() {
+  const rows = db
+    .select({
+      id: refunds.id,
+      reason: refunds.reason,
+      amount: refunds.amount,
+      requestedAt: refunds.requestedAt,
+      purchasedAt: purchases.createdAt,
+      buyerId: users.id,
+      buyerName: users.name,
+      buyerEmail: users.email,
+      courseId: courses.id,
+      courseTitle: courses.title,
+      courseSlug: courses.slug,
+    })
+    .from(refunds)
+    .innerJoin(purchases, eq(refunds.purchaseId, purchases.id))
+    .innerJoin(users, eq(purchases.userId, users.id))
+    .innerJoin(courses, eq(purchases.courseId, courses.id))
+    .where(eq(refunds.status, RefundStatus.Requested))
+    .orderBy(asc(refunds.requestedAt), asc(refunds.id))
+    .all();
+
+  // ponytail: a few queries per row; fine for a hand-reviewed queue, batch if it grows.
+  return rows.map((row) => {
+    const lessonIds = getLessonIds(row.courseId);
+    const progress = {
+      lessonCount: lessonIds.length,
+      completedLessonCount: getCompletedLessonCount(row.buyerId, lessonIds),
+      secondsWatched: getSecondsWatched(row.buyerId, lessonIds),
+    };
+    return { ...row, ...progress, warnings: getLimitWarnings(progress) };
+  });
+}
+
+export type RefundDecision = RefundStatus.Approved | RefundStatus.Declined;
+
+/**
+ * Approve or Decline a Pending Refund Request. Decisions are final: returns
+ * null if the request was already decided (or doesn't exist). Approving ends
+ * the Buyer's Enrollment; their progress is kept.
+ */
+export function decideRefundRequest(
+  refundId: number,
+  decision: RefundDecision,
+  platformAdminId: number
+) {
+  return db.transaction((tx) => {
+    const decided = tx
+      .update(refunds)
+      .set({
+        status: decision,
+        resolvedAt: new Date().toISOString(),
+        resolvedByUserId: platformAdminId,
+      })
+      .where(
+        and(eq(refunds.id, refundId), eq(refunds.status, RefundStatus.Requested))
+      )
+      .returning()
+      .get();
+
+    if (!decided) return null;
+
+    const purchase = tx
+      .select()
+      .from(purchases)
+      .where(eq(purchases.id, decided.purchaseId))
+      .get()!;
+
+    if (decision === RefundStatus.Approved) {
+      tx.delete(enrollments)
+        .where(
+          and(
+            eq(enrollments.userId, purchase.userId),
+            eq(enrollments.courseId, purchase.courseId)
+          )
+        )
+        .run();
+    }
+
+    return { refund: decided, purchase };
+  });
 }
