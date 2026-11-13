@@ -60,7 +60,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       id: refunds.id,
       courseTitle: courses.title,
       courseSlug: courses.slug,
-      amountPaid: purchases.amountPaid,
+      amount: refunds.amount,
       reason: refunds.reason,
       requestedAt: refunds.requestedAt,
     })
@@ -234,7 +234,7 @@ export default function Settings({ loaderData }: Route.ComponentProps) {
                   </span>
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {formatPrice(request.amountPaid)} · requested{" "}
+                  {formatPrice(request.amount)} · requested{" "}
                   {new Date(request.requestedAt).toLocaleDateString()}
                 </p>
                 <p className="mt-2 text-sm">{request.reason}</p>

@@ -7,6 +7,7 @@ import {
   uniqueIndex,
   type AnySQLiteColumn,
 } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
 
 export enum UserRole {
   Student = "student",
@@ -242,15 +243,22 @@ export const refunds = sqliteTable(
       .default(RefundStatus.Requested),
     // The learner's own words, in the box on the course page.
     reason: text("reason").notNull(),
-    // Null until someone approves — a declined request refunds nothing.
-    amountRefunded: integer("amount_refunded"),
+    // The Refundable Amount, fixed when the request is made so every screen
+    // and the eventual Refund agree even if the course price changes.
+    amount: integer("amount").notNull(),
     requestedAt: text("requested_at")
       .notNull()
       .$defaultFn(() => new Date().toISOString()),
     resolvedAt: text("resolved_at"),
     resolvedByUserId: integer("resolved_by_user_id").references(() => users.id),
   },
-  (table) => [index("refunds_purchase_idx").on(table.purchaseId)]
+  (table) => [
+    index("refunds_purchase_idx").on(table.purchaseId),
+    // At most one Pending Refund Request per purchase.
+    uniqueIndex("refunds_one_pending_per_purchase")
+      .on(table.purchaseId)
+      .where(sql`${table.status} = 'requested'`),
+  ]
 );
 
 export const teams = sqliteTable("teams", {
