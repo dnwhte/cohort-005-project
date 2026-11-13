@@ -17,7 +17,7 @@ import {
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 
-// Terms follow docs/glossary.md. Decisions follow docs/adr/0001 and 0002.
+// Terms follow GLOSSARY.md. Decisions follow docs/adr/0001 and 0002.
 
 const decisionSchema = z.object({
   refundId: z.coerce.number().int(),
@@ -151,7 +151,7 @@ export default function AdminRefunds({ loaderData }: Route.ComponentProps) {
           Refund requests
         </h1>
         <p className="mt-1 text-muted-foreground">
-          Pending requests, oldest first. Approving ends the learner's access
+          Pending requests, oldest first. Approving ends the student's access
           to the course. Decisions are final.
         </p>
       </div>
