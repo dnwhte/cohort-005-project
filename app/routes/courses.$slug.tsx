@@ -396,6 +396,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   let lessonProgressMap: Record<number, string> = {};
   let nextLessonId: number | null = null;
   let cancellation: { amount: number; lastDayInWindow: string } | null = null;
+  let pendingRefund: { amount: number; requestedAt: string } | null = null;
 
   if (currentUserId) {
     enrolled = isUserEnrolled(currentUserId, course.id);
@@ -410,6 +411,8 @@ export async function loader({ params, request }: Route.LoaderArgs) {
           amount: eligibility.amount,
           lastDayInWindow: eligibility.lastDayInWindow,
         };
+      } else if ("pendingRequest" in eligibility) {
+        pendingRefund = eligibility.pendingRequest ?? null;
       }
 
       progress = calculateProgress(currentUserId, course.id, false);
@@ -455,6 +458,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
     ratingSummary,
     userRating,
     cancellation,
+    pendingRefund,
   };
 }
 
@@ -556,6 +560,7 @@ export default function CourseDetail({ loaderData }: Route.ComponentProps) {
     ratingSummary,
     userRating,
     cancellation,
+    pendingRefund,
   } = loaderData;
   const isInstructor = currentUserId === course.instructorId;
   const [searchParams, setSearchParams] = useSearchParams();
@@ -797,6 +802,20 @@ export default function CourseDetail({ loaderData }: Route.ComponentProps) {
                       amount={cancellation.amount}
                     />
                   )}
+                  {pendingRefund && (
+                    <div className="border-t pt-4 text-sm">
+                      <p className="font-medium">Refund · Pending</p>
+                      <p
+                        className="mt-1 text-xs text-muted-foreground"
+                        suppressHydrationWarning
+                      >
+                        You asked for {formatPrice(pendingRefund.amount)} back
+                        on {new Date(pendingRefund.requestedAt).toLocaleDateString()}.
+                        We will email you when we have decided. You keep
+                        access to the course until then.
+                      </p>
+                    </div>
+                  )}
                 </>
               ) : (
                 enrollButton
@@ -889,7 +908,7 @@ function CancelPurchase({ slug, amount }: { slug: string; amount: number }) {
           className="w-full text-muted-foreground"
           onClick={() => setIsFormOpen(true)}
         >
-          Cancel my purchase
+          Request a refund
         </Button>
       </div>
     );
@@ -897,7 +916,7 @@ function CancelPurchase({ slug, amount }: { slug: string; amount: number }) {
 
   return (
     <div className="border-t pt-4">
-      <p className="mb-2 text-sm font-medium">Cancel my purchase</p>
+      <p className="mb-2 text-sm font-medium">Request a refund</p>
       <p className="mb-3 text-xs text-muted-foreground">
         We will send {formatPrice(amount)} back to the card you paid with, once
         someone has read your note.
@@ -915,7 +934,7 @@ function CancelPurchase({ slug, amount }: { slug: string; amount: number }) {
         />
         <div className="flex gap-2">
           <Button type="submit" size="sm" disabled={isSubmitting}>
-            {isSubmitting ? "Sending..." : "Cancel my purchase"}
+            {isSubmitting ? "Sending..." : "Request a refund"}
           </Button>
           <Button
             type="button"
