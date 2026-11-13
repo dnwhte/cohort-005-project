@@ -19,7 +19,7 @@ We had to decide when access ends (on request, on Approve, or when the Refund is
 ## Consequences
 
 - Access doesn't depend on the payment processor. If we waited for a Succeeded Refund, which doesn't exist yet, access would never end.
-- If a Refund later Fails, the Learner has already lost access while still owed money. The glossary treats Failed as "we're on it" and retries with a new Refund. Access isn't restored.
+- If a Refund later Fails, the Learner has already lost access while still owed money. ADR 5 treats Failed as "we're on it" and retries with a new Refund. Access isn't restored.
 - Keeping progress keeps the evidence behind the decision and makes buying again painless. Without an Enrollment the progress isn't visible.
 - The 50% completed and 2-hours-watched limits can't be reset by buying, getting a refund and buying again.
 

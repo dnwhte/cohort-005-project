@@ -16,7 +16,7 @@ import {
 } from "~/db/schema";
 import { getDiscountForCountry } from "~/lib/ppp";
 
-// Terms follow docs/glossary.md: Refund Request, Refund Window,
+// Terms follow GLOSSARY.md: Refund Request, Refund Window,
 // Refundable Amount, Ineligible.
 
 export const REFUND_WINDOW_DAYS = 14;

@@ -17,7 +17,7 @@ There was no way to Approve or Decline a Pending Refund Request. The app has two
 ## Consequences
 
 - A refund is a money decision, so it isn't tied to who owns the course content.
-- The bare word "Admin" is now ambiguous, so the glossary bans it in favour of Platform Admin and Team Admin.
+- The bare word "Admin" is now ambiguous, so `GLOSSARY.md` bans it in favour of Platform Admin and Team Admin.
 - Undoing a decision means restoring access and cancelling a Refund. That needs its own feature and isn't possible today.
 - There is no history view or audit screen yet. `resolvedByUserId` keeps the data for one.
 

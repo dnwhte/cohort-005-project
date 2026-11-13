@@ -17,7 +17,7 @@ import {
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 
-// Terms follow docs/glossary.md. Decisions follow docs/adr/0001 and 0002.
+// Terms follow GLOSSARY.md. Decisions follow docs/adr/0001 and 0002.
 
 const decisionSchema = z.object({
   refundId: z.coerce.number().int(),

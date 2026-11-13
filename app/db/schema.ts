@@ -32,6 +32,7 @@ export enum QuestionType {
   TrueFalse = "true_false",
 }
 
+// The decision on a Refund Request (see GLOSSARY.md). `Requested` is Pending.
 export enum RefundStatus {
   Requested = "requested",
   Approved = "approved",
@@ -230,6 +231,7 @@ export const purchases = sqliteTable(
   (table) => [index("purchases_course_idx").on(table.courseId)]
 );
 
+// Holds Refund Requests, not Refunds (see GLOSSARY.md).
 export const refunds = sqliteTable(
   "refunds",
   {
@@ -282,6 +284,7 @@ export const teamMembers = sqliteTable("team_members", {
     .$defaultFn(() => new Date().toISOString()),
 });
 
+// One row per Seat (see GLOSSARY.md). Not a discount.
 export const coupons = sqliteTable("coupons", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   teamId: integer("team_id")

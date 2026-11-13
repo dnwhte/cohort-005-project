@@ -7,7 +7,7 @@ Do these checks in this order before you report a change to `app/` as complete:
 
 ## Domain language
 
-Use the terms in `docs/glossary.md` in UI copy, emails, code and issues. Add a new term there before you use it.
+Use the terms in `GLOSSARY.md` in UI copy, emails, code and issues. Add a new term there before you use it.
 
 ## When something breaks
 
