@@ -49,7 +49,7 @@ export function lastDayOfRefundWindow(purchasedAt: Date): string {
   return calendarDay(deadline);
 }
 
-/** Why a learner cannot start a Refund Request, or null if they can. */
+/** Why a student cannot start a Refund Request, or null if they can. */
 export function getIneligibleReason(f: RefundFacts): IneligibleReason | null {
   if (f.latestRequestStatus === RefundStatus.Requested) {
     return {
@@ -146,7 +146,7 @@ function getCompletedLessonCount(userId: number, lessonIds: number[]): number {
 }
 
 /**
- * Whether the Learner can start a Refund Request on the purchase that gave
+ * Whether the Student can start a Refund Request on the purchase that gave
  * them their Enrollment: their latest purchase of this course that is not a
  * Team Purchase (ADR 0003). The course page and the refund action both use
  * this, so the offer is shown exactly when the request would be accepted.
@@ -228,7 +228,7 @@ export function getRefundEligibility(
 
 // ─── Platform Admin decisions (ADR 0001, 0002) ───
 
-/** Has the Learner passed a refund limit? Shown as a warning, never a block. */
+/** Has the Student passed a refund limit? Shown as a warning, never a block. */
 export function getLimitWarnings(f: {
   lessonCount: number;
   completedLessonCount: number;

@@ -151,7 +151,7 @@ export default function AdminRefunds({ loaderData }: Route.ComponentProps) {
           Refund requests
         </h1>
         <p className="mt-1 text-muted-foreground">
-          Pending requests, oldest first. Approving ends the learner's access
+          Pending requests, oldest first. Approving ends the student's access
           to the course. Decisions are final.
         </p>
       </div>

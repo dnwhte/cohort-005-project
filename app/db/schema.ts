@@ -243,7 +243,7 @@ export const refunds = sqliteTable(
       .notNull()
       .$type<RefundStatus>()
       .default(RefundStatus.Requested),
-    // The learner's own words, in the box on the course page.
+    // The student's own words, in the box on the course page.
     reason: text("reason").notNull(),
     // The Refundable Amount, fixed when the request is made so every screen
     // and the eventual Refund agree even if the course price changes.

@@ -131,7 +131,7 @@ describe("getPendingRefundRequests", () => {
 });
 
 describe("getRefundEligibility", () => {
-  it("targets the purchase that enrolled the Learner, not a later Team Purchase", () => {
+  it("targets the purchase that enrolled the Student, not a later Team Purchase", () => {
     const own = buy(base.user.id);
     const team = testDb.insert(schema.teams).values({}).returning().get();
     const teamPurchase = testDb
