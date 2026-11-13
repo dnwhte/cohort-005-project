@@ -1,0 +1,1 @@
+ALTER TABLE `refunds` DROP COLUMN `amount_refunded`;
